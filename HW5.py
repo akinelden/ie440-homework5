@@ -1,5 +1,7 @@
 # %% [markdown]
 # # Homework 5
+# %% [markdown]
+# > **NOTE:** Beyler repoya ekledigim .bat dosyası ile git filter eklemis oluyorsunuz, böylece gereksiz degisiklikleri commit etmeyerek conflict ihtimalimiz cok daha düsüyor. Herkesin yapmasını tavsiye ediyorum.
 
 # %%
 import pandas as pd
@@ -17,7 +19,7 @@ x4 = Symbol("x4")
 func = 3*x1**2 + 2*x2**2 - 2*x1*x2 - 4*x1 + 2*x2 + 3
 f = lambdify([[x1,x2,x3,x4]], func, "numpy")
 gf = lambdify([[x1,x2,x3,x4]], func.diff([[x1, x2,x3,x4]]), "numpy")
-grad_f = lambda x_arr : np.array(gf(x_arr)).reshape(1,len(x_arr))
+grad_f = lambda x_arr : np.array(gf(x_arr), 'float64').reshape(1,len(x_arr))
 
 A = np.array([[1, 1, 1, 0],
               [1, 1, 0, 1]])
@@ -123,7 +125,7 @@ def determineBasicAndNonbasics(xk, bounds, A):
 
 
 # %%
-def ReducedGradient(x0, f=f, gradf=grad_f, eps=0.001, A=A, b=b, bounds=bounds):
+def ReducedGradient(x0, f=f, gradf=grad_f, eps=0.001, A=A, b=b, bounds=bounds, float_prec=6):
     k = 0
     xk = np.array(x0).reshape(len(x0),1)
     output = OutputTable()
@@ -135,8 +137,12 @@ def ReducedGradient(x0, f=f, gradf=grad_f, eps=0.001, A=A, b=b, bounds=bounds):
         Binv = np.linalg.inv(B)
         gradfk = gradf(xk)
         gradB = gradfk[:,basics]
-        rk = gradfk - gradB @ Binv @ A
-        dk = np.zeros((len(xk),1))
+        gradN = gradfk[:,nonbasics]
+        rNk = gradN - gradB @ Binv @ N
+        rBk = 0
+        rk = np.zeros((1,len(xk)))
+        np.put(rk, nonbasics, rNk) # since rBk is 0, we only put rNk into rk
+        dk = np.zeros_like(xk)
         for i in nonbasics:
             if xk[i] == bounds[i][0] and rk[0,i] < 0:
                 dk[i,0] = -rk[0,i]
@@ -146,16 +152,19 @@ def ReducedGradient(x0, f=f, gradf=grad_f, eps=0.001, A=A, b=b, bounds=bounds):
                 dk[i,0] = -rk[0,i]
             else:
                 dk[i,0] = 0
-        dk[basics] = - Binv @ N @ dk[nonbasics]
-        a_max = np.Infinity
+        dkB = - Binv @ N @ dk[nonbasics]
+        np.put(dk, basics, dkB)
+        a_max = 1000 # given upper limit
         for i in range(len(xk)):
+            if(dk[i,0] == 0): # max value is infinity if dkj is 0
+                continue
             a_max = min(a_max, max((bounds[i]-xk[i])/dk[i,0]))
         ak = ExactLineSearch(f,xk,dk,a_max)
         output.add_row(k, xk, f(xk), dk, ak)
         xkp = xk + ak * dk
         k += 1
-        xk = xkp
-        if np.linalg.norm(dk * ak) < eps: # algorithm doesn't end when its || dk || < eps
+        xk = np.round(xkp, float_prec) # rounding is required since the float calculations can cause precision problem
+        if np.linalg.norm(dk) < eps:
             repeat = False
     output.add_row(k, xk, f(xk), np.array([]), None)
     return xk, f(xk).item(), output
