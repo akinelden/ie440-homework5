@@ -1,8 +1,5 @@
 # %% [markdown]
 # # Homework 5
-# %% [markdown]
-# > **NOTE:** Beyler repoya ekledigim .bat dosyası ile git filter eklemis oluyorsunuz, böylece gereksiz degisiklikleri commit etmeyerek conflict ihtimalimiz cok daha düsüyor. Herkesin yapmasını tavsiye ediyorum.
-
 # %%
 import pandas as pd
 import numpy as np
@@ -80,20 +77,6 @@ def GoldenSection(f,epsilon=0.005, a=-1000,b=1000):
 
 
 # %%
-''' 
-def BisectionMethod(f,epsilon, a=-100,b=100) :
-    iteration=0
-    while (b - a) >= epsilon:
-        x_1 = (a + b) / 2
-        fx_1 = f(x_1)
-        if f(x_1 + epsilon) <= fx_1:
-            a = x_1
-        else:
-            b = x_1
-        iteration+=1
-    x_star = (a+b)/2
-    return x_star
-'''
 def ExactLineSearch(f, x0, d, a_max, eps=0.0000000001):
     alpha = Symbol('alpha')
     function_alpha = f(np.array(x0)+alpha*np.array(d))
